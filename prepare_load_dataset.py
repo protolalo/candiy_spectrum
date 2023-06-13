@@ -61,11 +61,13 @@ def check_spectra_prop(mol_dict):
     Returns:
         _: (bool) whether spectra meets conditions
     '''
-    cond1 = mol_dict.get('state', r'N\A').lower() == 'gas'
+    # cond1 = mol_dict.get('state', r'N\A').lower() == 'gas'
     cond2 = mol_dict.get('xunits', r'N\A').lower() != 'micrometers'
     cond3 = mol_dict.get('yunits', r'N\A').lower() == 'absorbance'
+    # cond3 = mol_dict.get('yunits', r'N\A').lower() == 'transmittance'
     
-    return all((cond1, cond2, cond3))
+    # return all((cond1, cond2, cond3))
+    return all((cond2, cond3))
 
 def add_spectra_to_df(spectra_df, file_path, bins, is_mass = False):
     '''Add a spectra from filepath to the dataframe after standardizing
@@ -207,7 +209,7 @@ def preprocess_spectra_df(spectra_df, is_mass = False, **kwargs):
         
 
 
-def load_dataset(data_dir, include_mass = False, **params):
+def load_dataset(data_dir, ir_prefix='', mass_prefix='', include_mass = False, **params):
     '''Load the spectra and target dataset for training
 
     Args:
@@ -221,7 +223,7 @@ def load_dataset(data_dir, include_mass = False, **params):
     '''
 
     #load and prepare IR data
-    ir_path = os.path.join(data_dir, 'ir.csv')
+    ir_path = os.path.join(data_dir, ir_prefix + 'ir.csv')
     logging.info('Loading IR data from {}'.format(ir_path))
     ir_df = pd.read_csv(ir_path, index_col = 0)
     ir_df = preprocess_spectra_df(ir_df, is_mass = False, **params).T
@@ -231,7 +233,7 @@ def load_dataset(data_dir, include_mass = False, **params):
     if include_mass:
 
         #Load and prepare mass data
-        mass_path = os.path.join(data_dir, 'mass.csv')
+        mass_path = os.path.join(data_dir, mass_prefix + 'mass.csv')
         logging.info('Loading mass data from {}'.format(mass_path))
         mass_df = pd.read_csv(mass_path, index_col = 0).T
         mass_df = mass_df.loc[mass_df.index.isin(ir_df.index)]
@@ -255,12 +257,16 @@ def load_dataset(data_dir, include_mass = False, **params):
     total_df = pd.merge(spectra_df, target_df, left_index = True, right_index = True, how = 'inner')
 
     # Shelly 6/12/2023
-    target_summary_path = os.path.join(data_dir, 'target_summary_all.csv')
-    target_df.sum(axis=0).to_csv(target_summary_path)
-
+    # target_summary_path = os.path.join(data_dir, ir_prefix + 'target_summary_all.csv')
+    # target_df.sum(axis=0).to_csv(target_summary_path)
+    print("Targets of all molecules (some do not have IR and Mass)")
+    print(target_df.sum(axis=0))
     merged_fn_group_df = total_df[list(func_grp_smarts.keys())]
-    target_summary_w_ir_path = os.path.join(data_dir, 'target_summary_with_ir.csv')
-    merged_fn_group_df.sum(axis=0).to_csv(target_summary_w_ir_path)
+    target_summary_w_ir_path = os.path.join(data_dir, ir_prefix + 'ir_target_summary.csv')
+    summary = merged_fn_group_df.sum(axis=0)
+    summary.to_csv(target_summary_w_ir_path)
+    print("Targets of molecules with ir data")
+    print(summary)
     # end Shelly 6/12/2023
 
     return total_df.values[:, :-fn_groups], total_df.values[:, -fn_groups:], list(func_grp_smarts.keys())
@@ -272,6 +278,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_dir', default= './data',\
         help = "Directory path containing scrapped data")
+    parser.add_argument('--save_prefix', default= '',\
+        help = "prefix for newly generated parsed csv files")
     parser.add_argument('--cas_list', default= 'species.txt',\
         help = "File containing CAS number and smiles of molecules")
 
@@ -280,6 +288,7 @@ if __name__ == '__main__':
     data_dir = args.data_dir
     set_logger(data_dir, 'prepare_data.log')
 
+    save_prefix = args.save_prefix
 
     # Create bins for IR and mass spectra
     logging.info('Creating bins for standardizing the spectra')
@@ -295,31 +304,31 @@ if __name__ == '__main__':
     for root, dirs, files in os.walk(data_dir):
         if root == os.path.join(data_dir, 'ir'):
             logging.info('Starting to parse IR jdx files')
-            ir_path = os.path.join(data_dir, 'ir.csv')
+            ir_path = os.path.join(data_dir, save_prefix + 'ir.csv')
             save_spectra_to_csv(root, files, ir_path, ir_bins, False)
 
-        if root == os.path.join(data_dir, 'mass'):
-            logging.info('Starting to parse mass jdx files')
-            mass_path = os.path.join(data_dir, 'mass.csv')
-            save_spectra_to_csv(root, files, mass_path, mass_bins, True)
+    #     if root == os.path.join(data_dir, 'mass'):
+    #         logging.info('Starting to parse mass jdx files')
+    #         mass_path = os.path.join(data_dir, save_prefix + 'mass.csv')
+    #         save_spectra_to_csv(root, files, mass_path, mass_bins, True)
             
-    #Load CAS data and merge with inchi
-    logging.info('Loading CAS file from {}'.format(args.cas_list))
-    cas_df = pd.read_csv(args.cas_list, sep='\t', header = 0, usecols = [1,2], names = ['formula','cas'])
-    cas_df.dropna(subset=['cas'], inplace=True)
-    cas_df.cas = cas_df.cas.str.replace('-', '')
-    cas_df.set_index('cas', inplace = True)
+    # #Load CAS data and merge with inchi
+    # logging.info('Loading CAS file from {}'.format(args.cas_list))
+    # cas_df = pd.read_csv(args.cas_list, sep='\t', header = 0, usecols = [1,2], names = ['formula','cas'])
+    # cas_df.dropna(subset=['cas'], inplace=True)
+    # cas_df.cas = cas_df.cas.str.replace('-', '')
+    # cas_df.set_index('cas', inplace = True)
 
     
-    inchi_path = os.path.join(data_dir, 'inchi.txt')
-    logging.info('Loading inchi file from {}'.format(inchi_path))
-    inchi_df = pd.read_csv(inchi_path, sep='\t', header = 0, usecols = [0,1],\
-                        names = ['cas','inchi'], dtype = str)
-    inchi_df.dropna(inplace = True)
-    inchi_df.set_index('cas', inplace = True)
+    # inchi_path = os.path.join(data_dir, 'inchi.txt')
+    # logging.info('Loading inchi file from {}'.format(inchi_path))
+    # inchi_df = pd.read_csv(inchi_path, sep='\t', header = 0, usecols = [0,1],\
+    #                     names = ['cas','inchi'], dtype = str)
+    # inchi_df.dropna(inplace = True)
+    # inchi_df.set_index('cas', inplace = True)
 
-    # Create and save csv of target 
-    cas_inchi_df = pd.merge(cas_df, inchi_df, left_index = True, right_index = True, how = 'inner')
-    target_path = os.path.join(data_dir, 'target.csv')
-    logging.info('Creating target csv dataset in {}'.format(target_path))
-    save_target_to_csv(cas_inchi_df, target_path)
+    # # Create and save csv of target 
+    # cas_inchi_df = pd.merge(cas_df, inchi_df, left_index = True, right_index = True, how = 'inner')
+    # target_path = os.path.join(data_dir, save_prefix + 'target.csv')
+    # logging.info('Creating target csv dataset in {}'.format(target_path))
+    # save_target_to_csv(cas_inchi_df, target_path)

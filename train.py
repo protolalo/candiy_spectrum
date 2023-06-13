@@ -21,6 +21,10 @@ parser.add_argument('--model_dir', default= './experiments/ae_mlp_model',\
      help = "Directory path containing params.json and to store summary and weights")
 parser.add_argument('--data_dir', default= './data',\
     help = "Directory path containing IR and MS spectra data")
+parser.add_argument('--ir_prefix', default= '',\
+    help = "prefix to ir.csv file")
+parser.add_argument('--mass_prefix', default= '',\
+    help = "prefix to mass.csv file")
 parser.add_argument('--restore_ae_from', default= None,\
     help = "Restore AE weights before training the model")
 parser.add_argument('--restore_mlp_from', default= None,\
@@ -38,7 +42,7 @@ with open(json_path) as json_data:
 set_logger(args.model_dir, 'train.log')
 
 logging.info('Load the dataset from {}'.format(args.data_dir))
-X, y, func_names = load_dataset(args.data_dir, include_mass = False, **params['preprocess'])
+X, y, func_names = load_dataset(args.data_dir, args.ir_prefix, args.mass_prefix, include_mass = False, **params['preprocess'])
 
 
 #Train and test generator for every fold

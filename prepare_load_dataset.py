@@ -207,7 +207,7 @@ def preprocess_spectra_df(spectra_df, is_mass = False, **kwargs):
         
 
 
-def load_dataset(data_dir, include_mass = True, **params):
+def load_dataset(data_dir, include_mass = False, **params):
     '''Load the spectra and target dataset for training
 
     Args:
@@ -250,9 +250,19 @@ def load_dataset(data_dir, include_mass = True, **params):
     logging.info('Loading target data from {}'.format(target_path))
     target_df = pd.read_csv(target_path, index_col = 0, dtype = np.float64)
 
+
     fn_groups = target_df.shape[1]
     total_df = pd.merge(spectra_df, target_df, left_index = True, right_index = True, how = 'inner')
-    
+
+    # Shelly 6/12/2023
+    target_summary_path = os.path.join(data_dir, 'target_summary_all.csv')
+    target_df.sum(axis=0).to_csv(target_summary_path)
+
+    merged_fn_group_df = total_df[list(func_grp_smarts.keys())]
+    target_summary_w_ir_path = os.path.join(data_dir, 'target_summary_with_ir.csv')
+    merged_fn_group_df.sum(axis=0).to_csv(target_summary_w_ir_path)
+    # end Shelly 6/12/2023
+
     return total_df.values[:, :-fn_groups], total_df.values[:, -fn_groups:], list(func_grp_smarts.keys())
     
     

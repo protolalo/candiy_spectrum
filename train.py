@@ -38,7 +38,7 @@ with open(json_path) as json_data:
 set_logger(args.model_dir, 'train.log')
 
 logging.info('Load the dataset from {}'.format(args.data_dir))
-X, y, func_names = load_dataset(args.data_dir, True, **params['preprocess'])
+X, y, func_names = load_dataset(args.data_dir, include_mass = False, **params['preprocess'])
 
 
 #Train and test generator for every fold

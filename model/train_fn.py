@@ -1,7 +1,9 @@
 import os
 import logging
 from tqdm import trange
-import tensorflow as tf
+# import tensorflow as tf 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 from .evaluate_fn import evaluate_sess
 

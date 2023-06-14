@@ -5,6 +5,9 @@ import argparse
 import json
 
 import tensorflow as tf
+# import tensorflow.compat.v1 as tf
+# tf.disable_v2_behavior()
+
 tf.get_logger().setLevel('ERROR')
 
 from model.utils import set_logger, train_test_generator
@@ -85,7 +88,7 @@ for cv, (train_data, test_data) in enumerate(data_generator):
         train_data = evaluate_and_predict(train_model, is_train_data = True, **emb_params)
         test_data = evaluate_and_predict(eval_model, is_train_data = False, **emb_params)
 
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
     logging.info('Training MLP model')
 
     mlp_params = params['mlp']

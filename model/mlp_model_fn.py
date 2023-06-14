@@ -1,4 +1,6 @@
-import tensorflow as tf 
+# import tensorflow as tf 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 def build_mlp_model(is_training, inputs, params):
     '''Build forward model and compute logits
@@ -54,25 +56,26 @@ def mlp_model_fn(is_training, inputs, params):
     '''
     target = inputs['target']
     spectra_data = inputs['spectra_data']
-    is_train_ph = tf.placeholder_with_default(is_training, shape=()) #Define a placeholder for setting mode during evaluation
+    is_train_ph = tf.compat.v1.placeholder_with_default(is_training, shape=()) #Define a placeholder for setting mode during evaluation
     params['output_shape'] = target.shape[1]
     num_functional_groups = tf.cast(target.shape[1], tf.float64)
 
     #Compute logits and make predictions 
-    with tf.variable_scope('model', reuse = not is_training):
+    with tf.compat.v1.variable_scope('model', reuse = not is_training):
         logits = build_mlp_model(is_train_ph, spectra_data, params)
         pred_probs = tf.sigmoid(logits)
         predictions = tf.cast(tf.greater_equal(pred_probs, params['threshold']), tf.float64)
         
     #Binary cross entropy loss computed across every dimension for multi label classification
     loss = tf.reduce_mean(tf.losses.sigmoid_cross_entropy(target, logits))
+    # loss = tf.reduce_mean(tf.losses.binary_crossentropy(target, logits)) # Shelly
     num_correct_predictions = tf.reduce_sum(tf.cast(tf.equal(target, predictions),tf.float64), axis = 1)/num_functional_groups
     accuracy = tf.reduce_mean(tf.cast(tf.equal(num_correct_predictions, 1.0), tf.float64))
 
 
 
     if is_training:
-        optimizer = tf.train.AdamOptimizer(params['learning_rate'])
+        optimizer = tf.compat.v1.train.AdamOptimizer(params['learning_rate'])
         global_step = tf.train.get_or_create_global_step()
         
         #Perform update_op to update moving mean and variance before minimizing the loss

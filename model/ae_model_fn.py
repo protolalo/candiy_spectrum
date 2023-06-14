@@ -1,4 +1,6 @@
-import tensorflow as tf 
+# import tensorflow as tf 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 def build_ae_model(is_training, inputs, params):
     '''Build forward model and reconstruct the spectra

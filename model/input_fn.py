@@ -1,5 +1,6 @@
-import tensorflow as tf 
-
+# import tensorflow as tf 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 def input_fn(is_training, data, params):
     ''' Input function for spectra dataset
@@ -32,6 +33,7 @@ def input_fn(is_training, data, params):
     iterator_initializer_op = iterator.initializer
     
     inputs = {'spectra_data' : spectra_data, 'target' : target, 'iterator_initializer': iterator_initializer_op}
+
         
     return inputs
         

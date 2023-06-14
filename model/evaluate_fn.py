@@ -3,7 +3,9 @@ import logging
 from tqdm import trange
 
 import numpy as np
-import tensorflow as tf
+# import tensorflow as tf 
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 def evaluate_sess(sess, model_spec, num_steps, writer, feed_dict = {}):
     '''Evaluate the model on entire data

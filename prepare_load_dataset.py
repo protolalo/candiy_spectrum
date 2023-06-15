@@ -104,6 +104,22 @@ def add_spectra_to_df(spectra_df, file_path, bins, is_mass = False):
         
     return spectra_df
 
+
+def load_spectra_from_csv(spectra_path, is_mass= False, **params):
+  '''Load and prepare spectra dataframe from a csv file
+    Author: Shelly
+    Date Created: 6/15/2023
+    Args:
+        spectra_path: (string) path to load csv file
+        is_mass: (bool) whether data being parsed is Mass or IR
+
+    Returns:
+        None
+  '''
+  spectra_df = pd.read_csv(spectra_path, index_col = 0)
+  spectra_df = preprocess_spectra_df(spectra_df, is_mass = False, **params).T
+  return spectra_df
+
 def save_spectra_to_csv(root, files, save_path, bins, is_mass = False):
     '''Save the spectra dataframe as csv to path
 
@@ -206,8 +222,6 @@ def preprocess_spectra_df(spectra_df, is_mass = False, **kwargs):
 
     #Normalize each spectra
     return spectra_df.div(spectra_df.max(axis=0), axis=1)
-        
-
 
 def load_dataset(data_dir, ir_prefix='', mass_prefix='', include_mass = False, **params):
     '''Load the spectra and target dataset for training
@@ -222,13 +236,13 @@ def load_dataset(data_dir, ir_prefix='', mass_prefix='', include_mass = False, *
         y: (np.array) contains target values of corresponding spectra
     '''
 
-    #load and prepare IR data
+    # #load and prepare IR data
     ir_path = os.path.join(data_dir, ir_prefix + 'ir.csv')
     logging.info('Loading IR data from {}'.format(ir_path))
-    ir_df = pd.read_csv(ir_path, index_col = 0)
-    ir_df = preprocess_spectra_df(ir_df, is_mass = False, **params).T
+    ir_df = load_spectra_from_csv(spectra_path=ir_path, is_mass = False, **params)
     
     spectra_df = ir_df
+    # print (spectra_df)
     
     if include_mass:
 
@@ -255,19 +269,20 @@ def load_dataset(data_dir, ir_prefix='', mass_prefix='', include_mass = False, *
 
     fn_groups = target_df.shape[1]
     total_df = pd.merge(spectra_df, target_df, left_index = True, right_index = True, how = 'inner')
+    # print(spectra_df)
 
-    # Shelly 6/12/2023
-    # target_summary_path = os.path.join(data_dir, ir_prefix + 'target_summary_all.csv')
-    # target_df.sum(axis=0).to_csv(target_summary_path)
-    print("Targets of all molecules (some do not have IR and Mass)")
-    print(target_df.sum(axis=0))
+    # # Shelly 6/12/2023
+    # # target_summary_path = os.path.join(data_dir, ir_prefix + 'target_summary_all.csv')
+    # # target_df.sum(axis=0).to_csv(target_summary_path)
+    # print("Targets of all molecules (some do not have IR and Mass)")
+    # print(target_df.sum(axis=0))
     merged_fn_group_df = total_df[list(func_grp_smarts.keys())]
     target_summary_w_ir_path = os.path.join(data_dir, ir_prefix + 'ir_target_summary.csv')
     summary = merged_fn_group_df.sum(axis=0)
     summary.to_csv(target_summary_w_ir_path)
-    print("Targets of molecules with ir data")
-    print(summary)
-    # end Shelly 6/12/2023
+    # print("Targets of molecules with ir data")
+    # print(summary)
+    # # end Shelly 6/12/2023
 
     return total_df.values[:, :-fn_groups], total_df.values[:, -fn_groups:], list(func_grp_smarts.keys())
     

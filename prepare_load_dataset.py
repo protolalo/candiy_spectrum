@@ -230,6 +230,7 @@ def load_dataset(data_dir, ir_prefix='', mass_prefix='', include_mass = False, *
         data_dir: (string) contains data path for csv file
         include_mass: (bool) whether to include mass spectra while training
         params: (dict) containing methods for interpolation
+        is_test_data: if true skip target processing
 
     Returns:
         X: (np.array) contains processed spectra values
@@ -259,7 +260,7 @@ def load_dataset(data_dir, ir_prefix='', mass_prefix='', include_mass = False, *
 
         #Merge mass data with IR
         spectra_df = pd.merge(spectra_df, mass_df, left_index = True, right_index = True, how = 'inner')
-     
+ 
     #Prepare target data and rearrange to match the spectra
     spectra_df.index = spectra_df.index.astype('int')
     target_path = os.path.join(data_dir, 'target.csv')
@@ -269,7 +270,6 @@ def load_dataset(data_dir, ir_prefix='', mass_prefix='', include_mass = False, *
 
     fn_groups = target_df.shape[1]
     total_df = pd.merge(spectra_df, target_df, left_index = True, right_index = True, how = 'inner')
-    # print(spectra_df)
 
     # # Shelly 6/12/2023
     # # target_summary_path = os.path.join(data_dir, ir_prefix + 'target_summary_all.csv')
@@ -280,11 +280,60 @@ def load_dataset(data_dir, ir_prefix='', mass_prefix='', include_mass = False, *
     target_summary_w_ir_path = os.path.join(data_dir, ir_prefix + 'ir_target_summary.csv')
     summary = merged_fn_group_df.sum(axis=0)
     summary.to_csv(target_summary_w_ir_path)
-    # print("Targets of molecules with ir data")
-    # print(summary)
+    print("Targets of molecules with ir data")
+    print(summary)
     # # end Shelly 6/12/2023
-
     return total_df.values[:, :-fn_groups], total_df.values[:, -fn_groups:], list(func_grp_smarts.keys())
+
+# Shelly 6/15/23    
+def load_test_data(data_dir, ir_prefix='', mass_prefix='', include_mass = False, **params):
+    '''Load the spectra and target dataset for training
+
+    Args:
+        data_dir: (string) contains data path for csv file
+        include_mass: (bool) whether to include mass spectra while training
+        params: (dict) containing methods for interpolation
+        is_test_data: if true skip target processing
+
+    Returns:
+        X: (np.array) contains processed spectra values
+        y: (np.array) contains target values of corresponding spectra
+    '''
+
+    # #load and prepare IR data
+    ir_path = os.path.join(data_dir, ir_prefix + 'ir.csv')
+    logging.info('Loading IR data from {}'.format(ir_path))
+    ir_df = load_spectra_from_csv(spectra_path=ir_path, is_mass = False, **params)
+    
+    spectra_df = ir_df
+    # print (spectra_df)
+    
+    if include_mass:
+
+        #Load and prepare mass data
+        mass_path = os.path.join(data_dir, mass_prefix + 'mass.csv')
+        logging.info('Loading mass data from {}'.format(mass_path))
+        mass_df = pd.read_csv(mass_path, index_col = 0).T
+        mass_df = mass_df.loc[mass_df.index.isin(ir_df.index)]
+        mass_df = preprocess_spectra_df(mass_df, is_mass = True)
+        
+#         mass_df = mass_df.reindex(ir_df.index)
+#         spectra_df = pd.concat([spectra_df, mass_df], axis = 1)
+#         spectra_df.dropna(inplace = True)
+
+        #Merge mass data with IR
+        spectra_df = pd.merge(spectra_df, mass_df, left_index = True, right_index = True, how = 'inner')
+ 
+    #Prepare target data and rearrange to match the spectra
+    spectra_df.index = spectra_df.index.astype('int')
+    target_path = os.path.join(data_dir, 'target.csv')
+    logging.info('Loading target data from {}'.format(target_path))
+    target_df = pd.read_csv(target_path, index_col = 0, dtype = np.float64)
+
+    n_target_groups = len(func_grp_smarts)
+
+    func_grp_array = np.array([np.zeros(n_target_groups) for _ in range(spectra_df.shape[0])])
+    return spectra_df.values[:,], func_grp_array, list(func_grp_smarts.keys())
     
     
 if __name__ == '__main__':

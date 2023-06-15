@@ -11,13 +11,13 @@ import tensorflow as tf
 
 tf.get_logger().setLevel('ERROR')
 
-from model.utils import set_logger, train_test_generator, plot_spectrum
+from model.utils import set_logger, train_test_generator, test_generator
 from model.input_fn import input_fn
 from model.ae_model_fn import  ae_model_fn
 from model.mlp_model_fn import mlp_model_fn
 from model.train_fn import train_and_save
 from model.evaluate_fn import evaluate_and_predict
-from prepare_load_dataset import load_dataset, load_spectra_from_csv
+from prepare_load_dataset import load_dataset, load_test_data
 from synthesize_results import store_results
 
 parser = argparse.ArgumentParser()
@@ -49,34 +49,25 @@ set_logger(args.model_dir, 'train.log')
 # X, y, func_names = load_dataset(args.data_dir, args.ir_prefix, args.mass_prefix, include_mass = False, **params['preprocess'])
 # X, y, func_names = load_spectra_from_csv(args.data_dir, args.ir_prefix, **params['preprocess'])
 
-# load ir spectra
-ir_path = os.path.join(args.data_dir, args.ir_prefix + 'ir.csv')
-logging.info('Loading IR data from {}'.format(ir_path))
-ir_df = load_spectra_from_csv(spectra_path=ir_path, is_mass = False, **params)
-print (ir_df.T)
+# # load ir spectra
+# ir_path = os.path.join(args.data_dir, args.ir_prefix + 'ir.csv')
+# logging.info('Loading IR data from {}'.format(ir_path))
+# ir_df = load_spectra_from_csv(spectra_path=ir_path, is_mass = False, **params)
+# print (ir_df.T)
 # print (ir_df.T['89554'])
-print (ir_df.T['75263'])
+# # print (ir_df.T['75263'])
+logging.info('Load the dataset from {}'.format(args.data_dir))
+X, y, func_names = load_test_data(args.data_dir, args.ir_prefix, include_mass = False, **params['preprocess'])
 
-## plot_spectrum(X[0],y[0])
-plt.xlabel('Index')
-# plt.ylabel('89554')
-# Set x-axis ticks at an interval of 3
-plt.xticks(range(400, 4000, 100))
-plt.figure(figsize=(8, 6))
+# ## plot spectra
+# plt.figure(figsize=(8, 6))
 # plt.plot(ir_df.T['89554'])
-plt.plot(ir_df.T['75263'])
+# # plt.plot(ir_df.T['75263'])
+# plt.savefig('plot.png')
 
-
-plt.savefig('plot.png')
-
-# predict functional groups
-
-# if target exists in original csv, print comparison, print erros
-
-
-
-# #Train and test generator for every fold
-# data_generator = train_test_generator(X, y, params['n_splits'])
+#Train and test generator for every fold
+data_generator = test_generator(X, y, 1)
+print (data_generator)
 
 # train_predictions = []
 # test_predictions = []

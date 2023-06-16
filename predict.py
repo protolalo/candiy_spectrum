@@ -66,16 +66,15 @@ X, y, func_names = load_test_data(args.data_dir, args.ir_prefix, include_mass = 
 # plt.savefig('plot.png')
 
 #Train and test generator for every fold
-data_generator = test_generator(X, y, 1)
-print (data_generator)
+data_generator = train_test_generator(X, y, 1)
 
-# train_predictions = []
-# test_predictions = []
+train_predictions = []
+test_predictions = []
 
-# for cv, (train_data, test_data) in enumerate(data_generator):
+for cv, (train_data, test_data) in enumerate(data_generator):
 #     logging.info('Starting fold {}'.format(cv+1))
-#     train_size = train_data[0].shape[0]
-#     eval_size = test_data[0].shape[0]
+    train_size = train_data[0].shape[0]
+    eval_size = test_data[0].shape[0]
     
 #     if params['train_ae']:
 #         tf.reset_default_graph()
@@ -109,33 +108,33 @@ print (data_generator)
 #     tf.compat.v1.reset_default_graph()
 #     logging.info('Training MLP model')
 
-#     mlp_params = params['mlp']
-#     mlp_params['train_size'] = train_size
-#     mlp_params['eval_size'] = eval_size
+    mlp_params = params['mlp']
+    mlp_params['train_size'] = train_size
+    mlp_params['eval_size'] = eval_size
 
 
-#     logging.info('Creating the inputs for the model')
+    logging.info('Creating the inputs for the model')
 #     train_inputs = input_fn(True, train_data, mlp_params)
-#     eval_inputs = input_fn(False, test_data, mlp_params)
+    eval_inputs = input_fn(False, test_data, mlp_params)
 
 #     logging.info('Building the model')
 #     train_model = mlp_model_fn(True, train_inputs, mlp_params)
-#     eval_model = mlp_model_fn(False, eval_inputs, mlp_params)
+    eval_model = mlp_model_fn(False, eval_inputs, mlp_params)
 
 #     logging.info('Start training {} epochs'.format(params['mlp']['num_epochs']))
-#     model_dir = os.path.join(args.model_dir, 'cv_' + str(cv+1), 'mlp')
+    model_dir = os.path.join(args.model_dir, 'cv_' + str(cv+1), 'mlp')
 #     train_and_save(train_model, eval_model, model_dir, mlp_params, restore_weights = args.restore_mlp_from)
 
-#     logging.info('Compute prediction probabilities of the spectra data')
-#     pred_params = {'restore_path' :os.path.join(model_dir,'best_weights'), 'params' :mlp_params,\
-#                         'layer_name' :'pred_probs', 'evaluate_model' :False}
+    logging.info('Compute prediction probabilities of the spectra data')
+    pred_params = {'restore_path' :os.path.join(model_dir,'best_weights'), 'params' :mlp_params,\
+                        'layer_name' :'pred_probs', 'evaluate_model' :False}
         
-#     #Compute prediction probabilites of the model to compute f1 and perfection rate
-#     train_data = evaluate_and_predict(train_model, is_train_data = True, **pred_params)
-#     test_data = evaluate_and_predict(eval_model, is_train_data = False, **pred_params)
+    #Compute prediction probabilites of the model to compute f1 and perfection rate
+    train_data = evaluate_and_predict(eval_model, is_train_data = False, **pred_params)
+    test_data = evaluate_and_predict(eval_model, is_train_data = False, **pred_params)
 
-#     train_predictions.append(train_data)
-#     test_predictions.append(test_data)
+    train_predictions.append(train_data)
+    test_predictions.append(test_data)
 
 # #Compute and save the metrics
 # store_results(train_predictions, test_predictions, func_names, args.model_dir)
